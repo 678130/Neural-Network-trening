@@ -17,6 +17,9 @@ VALID_CQT = os.path.join(BASE, "cqt_valid")
 TRAIN_LABELS = os.path.join(TRAIN_CQT, "labels.json")
 VALID_LABELS = os.path.join(VALID_CQT, "labels.json")
 
+HOP_LENGTH = 512
+SR = 16000
+
 import json
 import os
 
@@ -63,10 +66,21 @@ pitch_to_class = {p: i for i, p in enumerate(all_pitches)}
 with open("pitch_to_class.json", "w") as f:
     json.dump(pitch_to_class, f)
 
+with open(TRAIN_LABELS) as f:
+    metadata = json.load(f)
+    
+all_pitches = sorted(set(metadata.values()))
+pitch_to_class = {p: i for i, p in enumerate(all_pitches)}
+
+with open("pitch_to_class.json", "w") as f:
+    json.dump(pitch_to_class, f)
+
 train_dataset = CQTDataset(
     cqt_dir=TRAIN_CQT,
     labels_path=TRAIN_LABELS,
     pitch_to_class=pitch_to_class,
+    sr=SR,
+    hop_length=HOP_LENGTH,
     augment=True
 )
 
@@ -74,6 +88,8 @@ valid_dataset = CQTDataset(
     cqt_dir=VALID_CQT,
     labels_path=VALID_LABELS,
     pitch_to_class=pitch_to_class,
+    sr=SR,
+    hop_length=HOP_LENGTH,
     augment=False
 )
 
@@ -222,6 +238,7 @@ for epoch in range(EPOCHS):
           f"Err: {mean_error:.2f} | "
           f"±1: {acc_1:.3f} | ±2: {acc_2:.3f}")
 
+
 # Save model
 torch.save(model.state_dict(), "/kaggle/working/note_model.pth")
 
@@ -259,3 +276,5 @@ plt.xlabel("Predicted")
 plt.ylabel("True")
 plt.title("Confusion Matrix")
 plt.show()
+
+torch.save(model.state_dict(), "/kaggle/working/note_model_cqtv4.pth")
